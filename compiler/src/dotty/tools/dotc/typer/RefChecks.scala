@@ -33,6 +33,16 @@ object RefChecks {
     def isStable = true
   }
 
+  def checkNoInlineAnnoClasses(tree: DefDef)(using Context): Unit =
+    if tree.symbol.is(Inline) then
+      new TreeTraverser {
+        def traverse(tree: Tree)(using Context): Unit =
+          tree match
+            case tree: TypeDef if tree.symbol.isAnonymousClass =>
+              report.warning(new InlinedAnonClassWarning(), tree.symbol.sourcePos)
+            case _ => traverseChildren(tree)
+      }.traverse(tree)
+
   /** Only one overloaded alternative is allowed to define default arguments */
   private def checkOverloadedRestrictions(clazz: Symbol)(using Context): Unit = {
     // Using the default getters (such as methodName$default$1) as a cheap way of

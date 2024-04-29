@@ -10,6 +10,7 @@ import Symbols.*
 import typer.RefChecks
 import MegaPhase.MiniPhase
 import ast.tpd
+import reporting.InlinedAnonClassWarning
 
 import config.Feature
 import Decorators.*
@@ -51,6 +52,7 @@ class PruneErasedDefs extends MiniPhase with SymTransformer { thisTransform =>
     else cpy.ValDef(tree)(rhs = trivialErasedTree(tree.rhs))
 
   override def transformDefDef(tree: DefDef)(using Context): Tree =
+    RefChecks.checkNoInlineAnnoClasses(tree)
     checkErasedInExperimental(tree.symbol)
     if !tree.symbol.isEffectivelyErased || tree.rhs.isEmpty then tree
     else cpy.DefDef(tree)(rhs = trivialErasedTree(tree.rhs))
