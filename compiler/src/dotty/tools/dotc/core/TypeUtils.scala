@@ -137,6 +137,18 @@ class TypeUtils:
           names.zip(values)
         case tp: TypeProxy =>
           tp.superType.namedTupleElementTypesUpTo(bound, normalize)
+        case tp: OrType =>
+          val lhs = tp.tp1.namedTupleElementTypesUpTo(bound, normalize)
+          val rhs = tp.tp2.namedTupleElementTypesUpTo(bound, normalize)
+          if (lhs != rhs) throw TypeError(em"Malformed Union Type: Named Tuple elements must be the same, but $lhs and $rhs were found.")
+          lhs
+        case tp: AndType =>
+          (tp.tp1.namedTupleElementTypesUpTo(bound, normalize), tp.tp2.namedTupleElementTypesUpTo(bound, normalize)) match
+            case (Nil, rhs) => rhs
+            case (lhs, Nil) => lhs
+            case (lhs, rhs) =>
+              if (lhs != rhs) throw TypeError(em"Malformed Intersection Type: Named Tuple elements must be the same, but $lhs and $rhs were found.")
+              lhs
         case t =>
           Nil
 
