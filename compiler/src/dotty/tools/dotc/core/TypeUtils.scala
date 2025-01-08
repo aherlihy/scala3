@@ -135,37 +135,15 @@ class TypeUtils:
             case t => throw TypeError(em"Malformed NamedTuple: names must be string types, but $t was found.")
           val values = vals.tupleElementTypesUpTo(bound, normalize).getOrElse(Nil)
           names.zip(values)
-        case tp: TypeProxy =>
-          tp.superType.namedTupleElementTypesUpTo(bound, normalize)
-        case tp: OrType =>
-          val lhs = tp.tp1.namedTupleElementTypesUpTo(bound, normalize)
-          val rhs = tp.tp2.namedTupleElementTypesUpTo(bound, normalize)
-          if (lhs != rhs) throw TypeError(em"Malformed Union Type: Named Tuple elements must be the same, but $lhs and $rhs were found.")
-          lhs
-        case tp: AndType =>
-          (tp.tp1.namedTupleElementTypesUpTo(bound, normalize), tp.tp2.namedTupleElementTypesUpTo(bound, normalize)) match
-            case (Nil, rhs) => rhs
-            case (lhs, Nil) => lhs
-            case (lhs, rhs) =>
-              if (lhs != rhs) throw TypeError(em"Malformed Intersection Type: Named Tuple elements must be the same, but $lhs and $rhs were found.")
-              lhs
         case t =>
           Nil
 
     def namedTupleElementTypes(using Context): List[(TermName, Type)] =
       namedTupleElementTypesUpTo(Int.MaxValue)
 
+    // this is true for derived types
     def isNamedTupleType(using Context): Boolean = self match
       case defn.NamedTuple(_, _) => true
-      case _ => false
-
-    def derivesFromNamedTuple(using Context): Boolean = self match
-      case defn.NamedTuple(_, _) => true
-      case tp: MatchType =>
-        tp.bound.derivesFromNamedTuple || tp.reduced.derivesFromNamedTuple
-      case tp: TypeProxy => tp.superType.derivesFromNamedTuple
-      case tp: AndType => tp.tp1.derivesFromNamedTuple || tp.tp2.derivesFromNamedTuple
-      case tp: OrType => tp.tp1.derivesFromNamedTuple && tp.tp2.derivesFromNamedTuple
       case _ => false
 
     /** Drop all named elements in tuple type */

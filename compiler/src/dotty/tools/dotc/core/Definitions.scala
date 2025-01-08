@@ -1340,6 +1340,18 @@ class Definitions {
     def unapply(t: Type)(using Context): Option[(Type, Type)] = t match
       case AppliedType(tycon, nmes :: vals :: Nil) if tycon.typeSymbol == NamedTupleTypeRef.symbol =>
         Some((nmes, vals))
+      case tp: TypeProxy =>
+        unapply(tp.superType)
+      case tp: OrType =>
+        (unapply(tp.tp1), unapply(tp.tp2)) match
+          case (Some(l), Some(r)) if l == r => Some(l)
+          case _ => None
+      case tp: AndType =>
+        (unapply(tp.tp1), unapply(tp.tp2)) match
+          case (lhs, rhs) if lhs == rhs => lhs
+          case (lhs, None) => lhs
+          case (None, rhs) => rhs
+          case _ => None
       case _ => None
 
   final def isCompiletime_S(sym: Symbol)(using Context): Boolean =
