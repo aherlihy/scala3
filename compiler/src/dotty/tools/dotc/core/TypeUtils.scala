@@ -135,7 +135,7 @@ class TypeUtils:
             case t => throw TypeError(em"Malformed NamedTuple: names must be string types, but $t was found.")
           val values = vals.tupleElementTypesUpTo(bound, normalize).getOrElse(Nil)
           names.zip(values)
-        case tp: TypeProxy if tp.derivesFromNamedTuple =>
+        case tp: TypeProxy =>
           tp.superType.namedTupleElementTypesUpTo(bound, normalize)
         case t =>
           Nil
