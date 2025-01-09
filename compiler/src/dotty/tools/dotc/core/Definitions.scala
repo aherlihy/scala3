@@ -1337,28 +1337,26 @@ class Definitions {
   object NamedTuple:
     def apply(nmes: Type, vals: Type)(using Context): Type =
       AppliedType(NamedTupleTypeRef, nmes :: vals :: Nil)
-    def unapply(ty: Type)(using Context): Option[(Type, Type)] =
-      def recur(t: Type, bound: Int)(using Context): Option[(Type, Type)] =
-        if (bound < 0) None else // TODO 1: need some way to limit infinite recursion by checking for cycles or setting a bound? (see tests/neg/i12456+i9328))
-        t match
-          case AppliedType(tycon, nmes :: vals :: Nil) if tycon.typeSymbol == NamedTupleTypeRef.symbol =>
-            Some((nmes, vals))
-          case tp: TypeProxy =>
-            recur(tp.superType, bound - 1)
-          case tp: OrType =>
-            (recur(tp.tp1, bound - 1), recur(tp.tp2, bound - 1)) match
-              case (Some(lhsName, lhsVal), Some(rhsName, rhsVal)) if lhsName == rhsName =>
-                Some(lhsName, lhsVal | rhsVal) // TODO 2: how should pair-wise | work for tuple elements?
-              case _ => None
-          case tp: AndType =>
-            (recur(tp.tp1, bound - 1), recur(tp.tp2, bound - 1)) match
-              case (Some(lhsName, lhsVal), Some(rhsName, rhsVal)) if lhsName == rhsName =>
-                Some(lhsName, lhsVal & rhsVal) // TODO 2: how should pair-wise & work for tuple elements?
-              case (lhs, None) => lhs
-              case (None, rhs) => rhs
-              case _ => None
-          case _ => None
-      recur(ty, 20) // TODO 1: obviously this will change
+    def unapply(t: Type)(using Context): Option[(Type, Type)] =
+      t match
+        case AppliedType(tycon, nmes :: vals :: Nil) if tycon.typeSymbol == NamedTupleTypeRef.symbol =>
+          Some((nmes, vals))
+        case tp: TypeProxy =>
+          unapply(tp.superType)
+        case tp: OrType =>
+          (unapply(tp.tp1), unapply(tp.tp2)) match
+            case (Some(lhsName, lhsVal), Some(rhsName, rhsVal)) if lhsName == rhsName =>
+              Some(lhsName, lhsVal | rhsVal)
+            case _ => None
+        case tp: AndType =>
+          (unapply(tp.tp1), unapply(tp.tp2)) match
+            case (Some(lhsName, lhsVal), Some(rhsName, rhsVal)) if lhsName == rhsName =>
+              Some(lhsName, lhsVal & rhsVal)
+            case (lhs, None) => lhs
+            case (None, rhs) => rhs
+            case _ => None
+        case _ => None
+
   final def isCompiletime_S(sym: Symbol)(using Context): Boolean =
     sym.name == tpnme.S && sym.owner == CompiletimeOpsIntModuleClass
 

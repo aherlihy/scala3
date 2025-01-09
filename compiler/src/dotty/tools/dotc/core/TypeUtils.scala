@@ -127,9 +127,17 @@ class TypeUtils:
         case Some(types) => TypeOps.nestedPairs(types)
         case None => throw new AssertionError("not a tuple")
 
-    def namedTupleElementTypesUpTo(bound: Int, normalize: Boolean = true)(using Context): List[(TermName, Type)] =
+    def namedTupleElementTypesUpTo(bound: Int, derived: Boolean, normalize: Boolean = true)(using Context): List[(TermName, Type)] =
       (if normalize then self.normalized else self).dealias match
-        case defn.NamedTuple(nmes, vals) =>
+        // for desugaring, ignore derived types to avoid infinite recursion in NamedTuple.unapply
+        case AppliedType(tycon, nmes :: vals :: Nil) if !derived && tycon.typeSymbol == defn.NamedTupleTypeRef.symbol =>
+          val names = nmes.tupleElementTypesUpTo(bound, normalize).getOrElse(Nil).map(_.dealias).map:
+            case ConstantType(Constant(str: String)) => str.toTermName
+            case t => throw TypeError(em"Malformed NamedTuple: names must be string types, but $t was found.")
+          val values = vals.tupleElementTypesUpTo(bound, normalize).getOrElse(Nil)
+          names.zip(values)
+        // default cause, used for post-typing
+        case defn.NamedTuple(nmes, vals) if derived =>
           val names = nmes.tupleElementTypesUpTo(bound, normalize).getOrElse(Nil).map(_.dealias).map:
             case ConstantType(Constant(str: String)) => str.toTermName
             case t => throw TypeError(em"Malformed NamedTuple: names must be string types, but $t was found.")
@@ -138,16 +146,17 @@ class TypeUtils:
         case t =>
           Nil
 
-    def namedTupleElementTypes(using Context): List[(TermName, Type)] =
-      namedTupleElementTypesUpTo(Int.MaxValue)
+    def namedTupleElementTypes(derived: Boolean)(using Context): List[(TermName, Type)] =
+      namedTupleElementTypesUpTo(Int.MaxValue, derived)
 
-    // this is true for derived types
     def isNamedTupleType(using Context): Boolean = self match
+//      case AppliedType(tycon, nmes :: vals :: Nil) if tycon.typeSymbol == defn.NamedTupleTypeRef.symbol =>
       case defn.NamedTuple(_, _) => true
       case _ => false
 
     /** Drop all named elements in tuple type */
     def stripNamedTuple(using Context): Type = self.normalized.dealias match
+//      case AppliedType(tycon, nmes :: vals :: Nil) if tycon.typeSymbol == defn.NamedTupleTypeRef.symbol =>
       case defn.NamedTuple(_, vals) =>
         vals
       case self @ AnnotatedType(tp, annot) =>
