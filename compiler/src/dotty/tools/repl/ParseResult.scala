@@ -52,6 +52,13 @@ object Load {
   val command: String = ":load"
 }
 
+/** `:require <path>` adds a jar to the classpath 
+ */
+case class Require(path: String) extends Command
+object Require {
+  val command: String = ":require"
+}
+
 /** To find out the type of an expression you may simply do:
  *
  * ```
@@ -139,6 +146,7 @@ object ParseResult {
     Reset.command -> (arg  => Reset(arg)),
     Imports.command -> (_  => Imports),
     Load.command -> (arg => Load(arg)),
+    Require.command -> (arg => Require(arg)),
     TypeOf.command -> (arg => TypeOf(arg)),
     DocOf.command -> (arg => DocOf(arg)),
     Settings.command -> (arg => Settings(arg)),
