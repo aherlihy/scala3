@@ -1342,7 +1342,7 @@ class Definitions {
         case AppliedType(tycon, nmes :: vals :: Nil) if tycon.typeSymbol == NamedTupleTypeRef.symbol =>
           Some((nmes, vals))
         case tp: TypeProxy =>
-          unapply(tp.superType)
+          val t = unapply(tp.superType); t
         case tp: OrType =>
           (unapply(tp.tp1), unapply(tp.tp2)) match
             case (Some(lhsName, lhsVal), Some(rhsName, rhsVal)) if lhsName == rhsName =>

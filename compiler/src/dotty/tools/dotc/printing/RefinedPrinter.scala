@@ -249,7 +249,9 @@ class RefinedPrinter(_ctx: Context) extends PlainPrinter(_ctx) {
       case tp @ AppliedType(tycon, args) =>
         val namedElems =
           try tp.namedTupleElementTypesUpTo(200, false, normalize = false)
-          catch case ex: TypeError => Nil
+          catch
+            case ex: TypeError => Nil
+            case ex: StackOverflowError  => Nil
         if namedElems.nonEmpty then
           toTextNamedTuple(namedElems)
         else tp.tupleElementTypesUpTo(200, normalize = false) match

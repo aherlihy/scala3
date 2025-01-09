@@ -150,13 +150,11 @@ class TypeUtils:
       namedTupleElementTypesUpTo(Int.MaxValue, derived)
 
     def isNamedTupleType(using Context): Boolean = self match
-//      case AppliedType(tycon, nmes :: vals :: Nil) if tycon.typeSymbol == defn.NamedTupleTypeRef.symbol =>
       case defn.NamedTuple(_, _) => true
       case _ => false
 
     /** Drop all named elements in tuple type */
     def stripNamedTuple(using Context): Type = self.normalized.dealias match
-//      case AppliedType(tycon, nmes :: vals :: Nil) if tycon.typeSymbol == defn.NamedTupleTypeRef.symbol =>
       case defn.NamedTuple(_, vals) =>
         vals
       case self @ AnnotatedType(tp, annot) =>
