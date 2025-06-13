@@ -273,6 +273,7 @@ object Applications {
       unapp.println(i"unapplyQual = $qual, unapplyArgs = ${unapplyResult} with $argTypes / $args")
       for argType <- argTypes do
         assert(!isBounds(argType), unapplyResult.show)
+      // TODO: could process Tuple :* here?
       val alignedArgs = argTypes match
         case argType :: Nil
         if args.lengthCompare(1) > 0

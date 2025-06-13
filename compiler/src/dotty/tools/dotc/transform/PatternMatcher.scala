@@ -260,13 +260,15 @@ object PatternMatcher {
          * ```
          */
         def matchArgsComponentsPlan(components: List[Tree], syms: List[Symbol]): Plan =
+          println(s"matchArgsComponentsPlan: components=$components, syms=$syms")
           components match {
             case component :: components1 => letAbstract(component, component.avoidPatBoundType())(sym => matchArgsComponentsPlan(components1, sym :: syms))
             case Nil => matchArgsPatternPlan(args, syms.reverse)
           }
         def matchArgsPatternPlan(args: List[Tree], syms: List[Symbol]): Plan =
+          println(s"matchArgsPatternPlan: args=$args, syms: $syms")
           args match {
-            case arg :: args1 =>
+            case arg :: args1 => // issue is that syms is List()
               val sym :: syms1 = syms: @unchecked
               patternPlan(sym, arg, matchArgsPatternPlan(args1, syms1))
             case Nil =>
@@ -395,11 +397,25 @@ object PatternMatcher {
                     // NamedArg trees are eliminated in FirstTransform but for named arguments
                     // of patterns we add a WasNamedArg attachment, which is used to guide the
                     // logic here. See i22900.scala for test cases.
+                    println(s"in unApplyPlan: args=$args")
                     val selectors = args match
                       case arg :: Nil if !isUnaryNamedTupleSelectArg(arg) =>
                         ref(getResult) :: Nil
                       case _ =>
-                        productSelectors(getResult.info).map(ref(getResult).select(_))
+                        println(s"NOT entering single named tuple case")
+                        val k1 = getResult.info
+                        val k2 = productSelectors(k1)
+                        println(s"\tgetResult.info=$k1, productSelectors(k1)=$k2")
+                        val k3 = k2.map(k =>
+                          val k4 = ref(getResult)
+                          val k5 = k4.select(k)
+                          println(s"\t\tmap: k=$k, ref(getResult)=$k4, k4.select(k)=$k5")
+                          k5
+                        )
+                        println(s"\treturning: $k3")
+                        // TODO: Issue is that getResult.info is the tuple apply type :*, not Tuple2, so productSelectors returns an empty list
+                        k3
+//                        productSelectors(getResult.info).map(ref(getResult).select(_))
                     matchArgsPlan(selectors, args, onSuccess)
                   }
               }
